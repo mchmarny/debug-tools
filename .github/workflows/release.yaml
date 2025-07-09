@@ -11,6 +11,7 @@ jobs:
     runs-on: ubuntu-latest
 
     permissions:
+      packages: write   # Allow pushing images to GHCR
       id-token: write  # enable OIDC keyless signing
       contents: read
 
