@@ -4,6 +4,8 @@ on:
   push:
     branches:
       - main
+  schedule:
+    - cron: "0 3 * * 1" # Every Mon at 03:00 UTC
   workflow_dispatch:
 
 jobs:
@@ -84,7 +86,9 @@ jobs:
             --type $ATTEST_FORMAT \
             --certificate-identity-regexp "https://github.com/${GITHUB_REPOSITORY}/.github/workflows/.*" \
             --certificate-oidc-issuer "https://token.actions.githubusercontent.com" \
-            "$IMAGE_WITH_DIGEST"
+            "$IMAGE_WITH_DIGEST" \
+            | jq -r '.payload | @base64d | fromjson | .predicate' > ./predicate.json
+            echo "SBOM predicate extracted to predicate.json"
 
       - name: Generate SLSA Provenance
         run: |
@@ -97,7 +101,9 @@ jobs:
       - name: Upload SBOM & Provenance Artifacts
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4.6.2
         with:
-          name: sbom-and-provenance
+          name: sbom-and-provenance-predicates
+          if-no-files-found: error
           path: |
             $SBOM_FILE
+            predicate.json
             slsa-provenance.json
