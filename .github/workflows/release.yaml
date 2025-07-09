@@ -1,0 +1,107 @@
+name: Release Docker Image with SLSA Provenance and SBOM attestation
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  docker-build-slsa:
+    runs-on: ubuntu-latest
+
+    permissions:
+      id-token: write  # enable OIDC keyless signing
+      contents: read
+
+    env:
+      IMAGE: ghcr.io/${{ github.repository }}
+      TAG: ${{ github.sha }}
+      SBOM_FORMAT: cyclonedx-json
+      SBOM_FILE: sbom.json
+      ATTEST_FORMAT: cyclonedx
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+        with:
+          fetch-depth: 1
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@e468171a9de216ec08956ac3ada2f0791b6bd435  # v3.11.1
+        with:
+          install: true
+
+      - name: Log in to GHCR
+        uses: docker/login-action@74a5d142397b4f367a81961eba4e8cd7edddf772  # v3.4.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build & Push Docker Image
+        id: docker_build
+        uses: docker/build-push-action@263435318d21b8e681c14492fe198d362a7d2c83  # v6.18.0
+        with:
+          context: .
+          file: tools.docker
+          push: true
+          tags: |
+            ${{ env.IMAGE }}:latest
+            ${{ env.IMAGE }}:${{ env.TAG }}
+          outputs: type=digest
+
+      - name: Save Image Digest
+        run: echo "${{ steps.docker_build.outputs.digest }}" > .digest
+
+      - name: Install Syft
+        uses: anchore/sbom-action/download-syft@cee1b8e05ae5b2593a75e197229729eabaa9f8ec  # v0.20.2
+
+      - name: Generate SBOM
+        run: |
+          IMAGE_WITH_DIGEST="${{ env.IMAGE }}@${{ steps.docker_build.outputs.digest }}"
+          syft "$IMAGE_WITH_DIGEST" -o $SBOM_FORMAT=$SBOM_FILE
+          echo "✅ SBOM generated at: $SBOM_FILE"
+
+      - name: Install Cosign
+        uses: sigstore/cosign-installer@398d4b0eeef1380460a10c8013a76f728fb906ac  # v3.9.1
+
+      - name: Cosign Keyless Sign
+        run: |
+          IMAGE_WITH_DIGEST="${{ env.IMAGE }}@${{ steps.docker_build.outputs.digest }}"
+          cosign sign --yes "$IMAGE_WITH_DIGEST"
+
+      - name: Cosign Attest SBOM
+        run: |
+          IMAGE_WITH_DIGEST="${{ env.IMAGE }}@${{ steps.docker_build.outputs.digest }}"
+          cosign attest --yes \
+            --predicate $SBOM_FILE \
+            --type $ATTEST_FORMAT \
+            "$IMAGE_WITH_DIGEST"
+
+      - name: Verify SBOM Attestation
+        run: |
+          IMAGE_WITH_DIGEST="${{ env.IMAGE }}@${{ steps.docker_build.outputs.digest }}"
+          cosign verify-attestation \
+            --type $ATTEST_FORMAT \
+            "$IMAGE_WITH_DIGEST" \
+            | jq -r '.payload | @base64d | fromjson | .predicate' \
+              > ./predicate.json
+          echo "SBOM predicate extracted to predicate.json"
+
+      - name: Generate SLSA Provenance
+        run: |
+          IMAGE_WITH_DIGEST="${{ env.IMAGE }}@${{ steps.docker_build.outputs.digest }}"
+          cosign attest --yes \
+            --type slsaprovenance \
+            --predicate slsa-provenance.json \
+            "$IMAGE_WITH_DIGEST"
+
+      - name: Upload SBOM & Provenance Artifacts
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4.6.2
+        with:
+          name: sbom-and-predicate
+          path: |
+            $SBOM_FILE
+            predicate.json
+            slsa-provenance.json
