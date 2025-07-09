@@ -90,9 +90,15 @@ jobs:
             | jq -r '.payload | @base64d | fromjson | .predicate' > ./predicate.json
             echo "SBOM predicate extracted to predicate.json"
 
-      - name: Generate SLSA Provenance
+      - name: Generate SLSA Provenance File
         run: |
           IMAGE_WITH_DIGEST="${{ env.IMAGE }}@${{ steps.build.outputs.digest }}"
+          cosign provenance \
+            --predicate slsa-provenance.json \
+            "$IMAGE_WITH_DIGEST"
+
+      - name: Attest SLSA Provenance
+        run: |
           cosign attest --yes \
             --type slsaprovenance \
             --predicate slsa-provenance.json \
