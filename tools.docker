@@ -1,0 +1,51 @@
+FROM cgr.dev/chainguard/go:latest-dev
+
+LABEL org.opencontainers.image.source="https://github.com/mchmarny/debug-tools" \
+      org.opencontainers.image.description="Set of debug tools" \
+      org.opencontainers.image.vendor="mchmarny" \
+      org.opencontainers.image.licenses="Apache-2.0" \
+      org.opencontainers.image.title="tools"
+
+# Versions (repo tags)
+ARG GRYPE_VERSION=v0.94.0
+ARG SYFT_VERSION=v1.27.1
+
+WORKDIR /app
+
+RUN apk update && apk upgrade && \
+    \
+    # Install core packages
+    apk add --no-cache \
+        bind-tools \
+        cosign \
+        crane \
+        curl \
+        dhcping \
+        ethtool \
+        file \
+        fping \
+        iftop \
+        iperf \
+        iputils \
+        jq \
+        openssh-client \
+        openssl \
+        strace \
+        tcpdump \
+        util-linux && \
+    \
+    # Install Syft, Grype
+    curl -sSfL https://raw.githubusercontent.com/anchore/grype/main/install.sh | VERSION=${GRYPE_VERSION} bash -s -- -b /usr/local/bin && \
+    curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh | VERSION=${SYFT_VERSION} bash -s -- -b /usr/local/bin && \
+    \
+    # Clean up
+    rm -rf /var/cache/apk/* \
+       /tmp/* /var/tmp/* /root/.cache /root/.config
+
+ENV PATH="/root/go/bin:/usr/local/bin:$PATH"
+
+SHELL ["/bin/bash", "-c"]
+
+ENTRYPOINT []
+
+CMD ["bash"]
