@@ -64,17 +64,19 @@ jobs:
           IMAGE_WITH_DIGEST="${{ env.IMAGE }}@${{ steps.build.outputs.digest }}"
           cosign sign --yes "$IMAGE_WITH_DIGEST"
 
-      - name: Attest SLSA Provenance
+      - name: Verify SLSA Provenance
         run: |
           IMAGE_WITH_DIGEST="${{ env.IMAGE }}@${{ steps.build.outputs.digest }}"
-          cosign attest --yes \
+          cosign verify-attestation \
             --type slsaprovenance \
-            "$IMAGE_WITH_DIGEST"
+            "$IMAGE_WITH_DIGEST" \
+            | jq -r '.payload | @base64d | fromjson' > slsa-provenance.json
+          echo "SLSA provenance extracted to slsa-provenance.json"
 
       - name: Upload SBOM & Provenance Artifacts
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4.6.2
         with:
-          name: provenance
+          name: sbom-and-provenance
           if-no-files-found: error
           path: |
             slsa-provenance.json
