@@ -47,21 +47,14 @@ jobs:
           context: .
           file: tools.docker
           push: true
+          provenance: mode=max
+          sbom: true
           tags: |
             ${{ env.IMAGE }}:latest
             ${{ env.IMAGE }}:${{ env.TAG }}
 
       - name: Save Image Digest
         run: echo "${{ steps.build.outputs.digest }}" > .digest
-
-      - name: Install Syft
-        uses: anchore/sbom-action/download-syft@cee1b8e05ae5b2593a75e197229729eabaa9f8ec  # v0.20.2
-
-      - name: Generate SBOM
-        run: |
-          IMAGE_WITH_DIGEST="${{ env.IMAGE }}@${{ steps.build.outputs.digest }}"
-          syft "$IMAGE_WITH_DIGEST" -o $SBOM_FORMAT=$SBOM_FILE
-          echo "SBOM generated at: $SBOM_FILE"
 
       - name: Install Cosign
         uses: sigstore/cosign-installer@398d4b0eeef1380460a10c8013a76f728fb906ac  # v3.9.1
@@ -70,25 +63,6 @@ jobs:
         run: |
           IMAGE_WITH_DIGEST="${{ env.IMAGE }}@${{ steps.build.outputs.digest }}"
           cosign sign --yes "$IMAGE_WITH_DIGEST"
-
-      - name: Cosign Attest SBOM
-        run: |
-          IMAGE_WITH_DIGEST="${{ env.IMAGE }}@${{ steps.build.outputs.digest }}"
-          cosign attest --yes \
-            --predicate $SBOM_FILE \
-            --type $ATTEST_FORMAT \
-            "$IMAGE_WITH_DIGEST"
-
-      - name: Verify SBOM Attestation
-        run: |
-          IMAGE_WITH_DIGEST="${{ env.IMAGE }}@${{ steps.build.outputs.digest }}"
-          cosign verify-attestation \
-            --type $ATTEST_FORMAT \
-            --certificate-identity-regexp "https://github.com/${GITHUB_REPOSITORY}/.github/workflows/.*" \
-            --certificate-oidc-issuer "https://token.actions.githubusercontent.com" \
-            "$IMAGE_WITH_DIGEST" \
-            | jq -r '.payload | @base64d | fromjson | .predicate' > ./predicate.json
-            echo "SBOM predicate extracted to predicate.json"
 
       - name: Attest SLSA Provenance
         run: |
@@ -100,9 +74,7 @@ jobs:
       - name: Upload SBOM & Provenance Artifacts
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4.6.2
         with:
-          name: sbom-and-provenance-predicates
+          name: provenance
           if-no-files-found: error
           path: |
-            $SBOM_FILE
-            predicate.json
             slsa-provenance.json
