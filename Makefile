@@ -59,7 +59,7 @@ image: ## Builds and pushes the multi-arch tools image
 sbom: ## Generates a Software Bill of Materials (SBOM)
 	@set -e; \
 	echo "Generating SBOM"; \
-	syft scan "$(shell cat .digest)" -q -s all-layers -o "${SBOM_FORMAT}=${SBOM_FILE}" || exit 1; \
+	syft scan "$(shell cat .digest)" -o "${SBOM_FORMAT}=${SBOM_FILE}" || exit 1; \
 	echo "SBOM generated successfully: ${SBOM_FILE}"
 
 .PHONY: scan
