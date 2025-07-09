@@ -1,4 +1,4 @@
-name: Release Docker Image with SLSA Provenance and SBOM attestation
+name: Image build/release with SLSA provenance and SBOM cosign attestation
 
 on:
   push:
@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  docker-build-slsa:
+  release:
     runs-on: ubuntu-latest
 
     permissions:
@@ -28,7 +28,7 @@ jobs:
         with:
           fetch-depth: 1
 
-      - name: Set up Docker Buildx
+      - name: Set up Buildx
         uses: docker/setup-buildx-action@e468171a9de216ec08956ac3ada2f0791b6bd435  # v3.11.1
 
       - name: Log in to GHCR
@@ -39,7 +39,7 @@ jobs:
           password: ${{ secrets.REG_PUSH_TOKEN || secrets.GITHUB_TOKEN }}
 
       - name: Build & Push Image
-        id: docker_build
+        id: build
         uses: docker/build-push-action@263435318d21b8e681c14492fe198d362a7d2c83  # v6.18.0
         with:
           context: .
@@ -50,28 +50,28 @@ jobs:
             ${{ env.IMAGE }}:${{ env.TAG }}
 
       - name: Save Image Digest
-        run: echo "${{ steps.docker_build.outputs.digest }}" > .digest
+        run: echo "${{ steps.build.outputs.digest }}" > .digest
 
       - name: Install Syft
         uses: anchore/sbom-action/download-syft@cee1b8e05ae5b2593a75e197229729eabaa9f8ec  # v0.20.2
 
       - name: Generate SBOM
         run: |
-          IMAGE_WITH_DIGEST="${{ env.IMAGE }}@${{ steps.docker_build.outputs.digest }}"
+          IMAGE_WITH_DIGEST="${{ env.IMAGE }}@${{ steps.build.outputs.digest }}"
           syft "$IMAGE_WITH_DIGEST" -o $SBOM_FORMAT=$SBOM_FILE
-          echo "✅ SBOM generated at: $SBOM_FILE"
+          echo "SBOM generated at: $SBOM_FILE"
 
       - name: Install Cosign
         uses: sigstore/cosign-installer@398d4b0eeef1380460a10c8013a76f728fb906ac  # v3.9.1
 
       - name: Cosign Keyless Sign
         run: |
-          IMAGE_WITH_DIGEST="${{ env.IMAGE }}@${{ steps.docker_build.outputs.digest }}"
+          IMAGE_WITH_DIGEST="${{ env.IMAGE }}@${{ steps.build.outputs.digest }}"
           cosign sign --yes "$IMAGE_WITH_DIGEST"
 
       - name: Cosign Attest SBOM
         run: |
-          IMAGE_WITH_DIGEST="${{ env.IMAGE }}@${{ steps.docker_build.outputs.digest }}"
+          IMAGE_WITH_DIGEST="${{ env.IMAGE }}@${{ steps.build.outputs.digest }}"
           cosign attest --yes \
             --predicate $SBOM_FILE \
             --type $ATTEST_FORMAT \
@@ -79,17 +79,16 @@ jobs:
 
       - name: Verify SBOM Attestation
         run: |
-          IMAGE_WITH_DIGEST="${{ env.IMAGE }}@${{ steps.docker_build.outputs.digest }}"
+          IMAGE_WITH_DIGEST="${{ env.IMAGE }}@${{ steps.build.outputs.digest }}"
           cosign verify-attestation \
             --type $ATTEST_FORMAT \
-            "$IMAGE_WITH_DIGEST" \
-            | jq -r '.payload | @base64d | fromjson | .predicate' \
-              > ./predicate.json
-          echo "SBOM predicate extracted to predicate.json"
+            --certificate-identity-regexp "https://github.com/${GITHUB_REPOSITORY}/.github/workflows/.*" \
+            --certificate-oidc-issuer "https://token.actions.githubusercontent.com" \
+            "$IMAGE_WITH_DIGEST"
 
       - name: Generate SLSA Provenance
         run: |
-          IMAGE_WITH_DIGEST="${{ env.IMAGE }}@${{ steps.docker_build.outputs.digest }}"
+          IMAGE_WITH_DIGEST="${{ env.IMAGE }}@${{ steps.build.outputs.digest }}"
           cosign attest --yes \
             --type slsaprovenance \
             --predicate slsa-provenance.json \
@@ -98,8 +97,7 @@ jobs:
       - name: Upload SBOM & Provenance Artifacts
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4.6.2
         with:
-          name: sbom-and-predicate
+          name: sbom-and-provenance
           path: |
             $SBOM_FILE
-            predicate.json
             slsa-provenance.json
