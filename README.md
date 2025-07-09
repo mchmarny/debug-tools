@@ -20,7 +20,26 @@ To verify attestation (SBOM) and download it locally to review:
 
 ```shell
 cosign verify-attestation --type cyclonedx --key cosign.pub $IMAGE_URI \
-		| jq -r '.payload | @base64d | fromjson | .predicate' > ./predicate.json
+		| jq -r '.payload | @base64d | fromjson | .predicate' > ./sbom.json
+```
+
+The `sbom.json` file output by the above command will include the complete [CycloneDX](https://cyclonedx.org/) v1.6 formatted SBOM wrapped in a CNCF [in-toto](in-toto.io) envelope.
+
+Since CycloneDX files are JSON based, you can use `jq` to query over the SBOM file to list all the installed components: 
+
+```shell
+jq -r '{
+  bomFormat: .bomFormat,
+  schema: ."$schema",
+  totalComponents: (.components | length),
+  componentTypes: (.components | map(.type) | unique),
+  packages: (.components | map({
+    name: .name,
+    version: .version,
+    type: .type,
+    purl: .purl
+  }))
+}' sbom.json
 ```
 
 ## Launch 

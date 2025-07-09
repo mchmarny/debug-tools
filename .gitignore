@@ -9,8 +9,9 @@ coverage.out
 # Coverage
 *.out
 
-# Vulnerability reports
+# Reports
 vuln.json
+sbom.json
 
 # Binaries
 bin
