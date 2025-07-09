@@ -8,6 +8,7 @@ coverage.out
 
 # Coverage
 *.out
+.digest
 
 # Reports
 vuln.json
