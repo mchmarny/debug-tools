@@ -73,12 +73,14 @@ jobs:
 
       - name: Verify SLSA Provenance
         run: |
+          set -euo pipefail
           IMAGE_WITH_DIGEST="${{ env.IMAGE }}@${{ steps.build.outputs.digest }}"
+          CERT_IDENTITY="https://github.com/${GITHUB_REPOSITORY}/github-actions"
           cosign verify-attestation \
             --type slsaprovenance \
+            --certificate-identity "$CERT_IDENTITY" \
             "$IMAGE_WITH_DIGEST" \
             | jq -r '.payload | @base64d | fromjson' > slsa-provenance.json
-          echo "SLSA provenance extracted to slsa-provenance.json"
 
       - name: Upload SBOM & Provenance Artifacts
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4.6.2
