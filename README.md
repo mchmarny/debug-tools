@@ -1,6 +1,6 @@
 # debug-tools
 
-Small container image with common network, storage, kernel, k8s debug tools.
+Container image with common network, storage, kernel, and k8s debug tools.
 
 > This image is rebuilt weekly, see [verification](#verification) section for SBOM and SLSA provenance attestation.
 
