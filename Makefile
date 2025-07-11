@@ -5,6 +5,8 @@ BRANCH          := $(shell git rev-parse --abbrev-ref HEAD)
 REMOTE 		    := $(shell git remote get-url origin)
 USER 		    := $(shell git config user.username)
 CHANGES         := $(shell git status --porcelain | wc -l | xargs)
+REGISTRY        := ghcr.io
+IMAGE           := $(REGISTRY)/$(USER)/$(PROJECT)
 
 # Tool versions
 GRYPE_VERSION   ?= 0.95.0
@@ -22,6 +24,8 @@ info: ## Prints the current project info
 	@echo "  remote:            $(REMOTE)"
 	@echo "  user:              $(USER)"
 	@echo "  changes:           $(CHANGES)"
+	@echo "  registry:          $(REGISTRY)"
+	@echo "  image:             $(IMAGE)"
 	@echo "Versions:"
 	@echo "  grype version:     $(GRYPE_VERSION)"
 	@echo "  syft version:      $(SYFT_VERSION)"
@@ -37,6 +41,36 @@ shas: ## Retrieves SHA256 checksums for all tools (for Dockerfile COPY)
 	curl -fsSL https://github.com/anchore/syft/releases/download/v${SYFT_VERSION}/syft_${SYFT_VERSION}_checksums.txt \
 	| grep 'linux_amd64.tar.gz' \
 	| awk '{print $$1}'
+
+
+.PHONY: builder
+builder: ## Builds the multi-architecture builder image
+	@set -e; \
+	if ! docker buildx inspect $(PROJECT) >/dev/null 2>&1; then \
+		docker buildx create --name $(PROJECT) --driver docker-container --use; \
+	else \
+		echo "Builder $(PROJECT) already exists, switching to it"; \
+		docker buildx use $(PROJECT); \
+	fi; \
+	docker buildx inspect --bootstrap; \
+	docker buildx ls
+
+.PHONY: image
+image: ## Builds and pushes the multi-arch tools image
+	@set -e; \
+	echo "$(GITHUB_TOKEN)" | docker login $(REGISTRY) -u oauthtoken --password-stdin; \
+	docker buildx build --no-cache --force-rm --platform linux/amd64,linux/arm64 \
+		-t "$(IMAGE):$(COMMIT)" \
+		-f tools.docker \
+		--push .; \
+	echo "Image built and pushed successfully: $(IMAGE):$(COMMIT)"; \
+	echo "Verifying image..."; \
+	docker buildx imagetools inspect "$(IMAGE):$(COMMIT)"
+
+.PHONY: run
+run: ## Run tools image locally
+	@set -e; \
+	docker run -it "$(IMAGE):$(COMMIT)" bash
 
 .PHONY: help
 help: ## Displays available commands
