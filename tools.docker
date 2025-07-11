@@ -6,12 +6,6 @@ ARG GRYPE_SHA256=82f22c660dcc0b49a9b45ec060a8d0f7b7fb75b33aecf6cc08060062bbf012c
 ARG SYFT_VERSION=1.28.0
 ARG SYFT_SHA256=3edee7fe1ceb1f78360e547f57048930d57f00c7ec3d0b8bdfb902805f048468
 
-LABEL org.opencontainers.image.source="https://github.com/mchmarny/debug-tools" \
-      org.opencontainers.image.description="Set of debug tools for cloud-native GPU workloads" \
-      org.opencontainers.image.vendor="mchmarny" \
-      org.opencontainers.image.licenses="Apache-2.0" \
-      org.opencontainers.image.title="debug-tools"
-
 WORKDIR /app
 
 RUN apk update && apk upgrade && \
