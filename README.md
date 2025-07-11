@@ -4,6 +4,61 @@ Small container image with common network, storage, kernel, k8s debug tools.
 
 > This image is rebuilt weekly. The latest version is available in the [ghcr.io registry](https://github.com/users/mchmarny/packages/container/debug-tools/457818382?tag=latest). 
 
+## tools
+
+### networking
+- [bind-tools](https://wiki.alpinelinux.org/wiki/Bind) – DNS utilities like `dig`, `nslookup`
+- [curl](https://curl.se/docs/) – Transfer data with URLs
+- [dhcping](https://github.com/troglobit/dhcping) – Ping DHCP servers
+- [ethtool](https://man7.org/linux/man-pages/man8/ethtool.8.html) – Display/change NIC settings
+- [fping](https://fping.org/) – Ping multiple hosts
+- [iftop](http://www.ex-parrot.com/pdw/iftop/) – Display bandwidth usage
+- [iperf3](https://iperf.fr/) – Network performance testing
+- [iputils](https://wiki.linuxfoundation.org/networking/iputils) – Tools like `ping`, `traceroute`
+- [mtr](https://github.com/traviscross/mtr) – `traceroute` + `ping` combined
+- [netcat-openbsd](https://man.openbsd.org/nc.1) – TCP/UDP debugging tool
+- [nmap](https://nmap.org/) – Network scanner
+- [socat](http://www.dest-unreach.org/socat/) – Bidirectional data relay
+- [tcpdump](https://www.tcpdump.org/) – Capture network traffic
+- [tshark](https://tshark.dev/) – CLI packet capture
+- [httpie](https://httpie.io/) – User-friendly HTTP client
+
+### storage
+- [file](https://man7.org/linux/man-pages/man1/file.1.html) – Identify file types
+- [util-linux](https://en.wikipedia.org/wiki/Util-linux) – Disk tools (`lsblk`, `mount`, etc.)
+- [lsof](https://man7.org/linux/man-pages/man8/lsof.8.html) – List open files
+- [iotop](https://linux.die.net/man/1/iotop) – Monitor disk I/O
+- [hdparm](https://linux.die.net/man/8/hdparm) – Disk performance tuning
+- [smartmontools](https://www.smartmontools.org/) – Disk health monitoring
+- [ncdu](https://dev.yorhel.nl/ncdu) – Disk usage analyzer
+- [tar](https://www.gnu.org/software/tar/) – Archiving utility
+
+### kernel/system
+- [strace](https://strace.io/) – Trace system calls
+- [procps](https://gitlab.com/procps-ng/procps) – Utilities like `ps`, `top`, `vmstat`
+- [sysstat](https://github.com/sysstat/sysstat) – Tools like `iostat`, `mpstat`
+- [htop](https://htop.dev/) – Interactive process viewer
+- [lshw](https://ezix.org/project/wiki/HardwareLiSter) – Hardware inventory
+- [dmidecode](https://linux.die.net/man/8/dmidecode) – BIOS/system info
+- [numactl](https://man7.org/linux/man-pages/man8/numactl.8.html) – NUMA tuning
+
+### kubernetes/cloud-native
+- [jq](https://stedolan.github.io/jq/) – JSON processor
+- [yq](https://mikefarah.gitbook.io/yq/) – YAML processor
+- [openssh-client](https://www.openssh.com/) – SSH client
+- [kubectl](https://kubernetes.io/docs/reference/kubectl/) – Kubernetes CLI
+- [helm](https://helm.sh/) – Kubernetes package manager
+- [k9s](https://k9scli.io/) – Kubernetes TUI
+- [cosign](https://docs.sigstore.dev/cosign/overview) – Container signing/verification
+- [crane](https://github.com/google/go-containerregistry/tree/main/cmd/crane) – OCI image operations
+
+### amd64-only
+- [dstat](https://github.com/dagwieers/dstat) – Resource statistics
+- [stern](https://github.com/stern/stern) – Tail logs from multiple pods
+- [nvidia-container-toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/overview.html) – NVIDIA GPU containers
+- [nvidia-smi](https://developer.nvidia.com/nvidia-system-management-interface) – GPU monitoring tool
+- [nvtop](https://github.com/Syllo/nvtop) – Top-like GPU monitoring
+
 ## usage 
 
 To run this image in your cluster on a specific node:
