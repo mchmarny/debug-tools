@@ -70,6 +70,7 @@ image: ## Builds and pushes the multi-arch tools image
 .PHONY: run
 run: ## Run tools image locally
 	@set -e; \
+	docker pull "$(IMAGE):latest"; \
 	docker run -it "$(IMAGE):latest" bash
 
 .PHONY: help
