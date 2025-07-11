@@ -2,7 +2,21 @@
 
 Small container image with common network, storage, kernel, k8s debug tools.
 
-> This image is rebuilt weekly. The latest version is available in the [ghcr.io registry](https://github.com/users/mchmarny/packages/container/debug-tools/457818382?tag=latest). 
+> This image is rebuilt weekly, see [verification](#verification) section for SBOM and SLSA provenance attestation.
+
+## usage 
+
+To run this image in your cluster on a specific node:
+
+```shell
+kubectl run -it --rm debug \
+  --image=ghcr.io/mchmarny/debug-tools:latest \
+  --restart=Never \
+  --overrides='{ "apiVersion": "v1", "spec": { "nodeName": "10.0.130.223" } }' \
+  -- bash
+```
+
+> Note: This image runs as root to support system-level debugging (network, storage, kernel).
 
 ## tools
 
@@ -58,20 +72,6 @@ Small container image with common network, storage, kernel, k8s debug tools.
 - [nvidia-container-toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/overview.html) – NVIDIA GPU containers
 - [nvidia-smi](https://developer.nvidia.com/nvidia-system-management-interface) – GPU monitoring tool
 - [nvtop](https://github.com/Syllo/nvtop) – Top-like GPU monitoring
-
-## usage 
-
-To run this image in your cluster on a specific node:
-
-```shell
-kubectl run -it --rm debug \
-  --image=ghcr.io/mchmarny/debug-tools:latest \
-  --restart=Never \
-  --overrides='{ "apiVersion": "v1", "spec": { "nodeName": "10.0.130.223" } }' \
-  -- bash
-```
-
-> Note: This image runs as root to support system-level debugging (network, storage, kernel).
 
 ## verification
 
