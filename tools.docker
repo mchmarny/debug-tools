@@ -16,7 +16,7 @@ RUN apk update && apk upgrade && \
         # Storage tools
         file util-linux lsof iotop hdparm smartmontools ncdu tar \
         # Kernel/System tools
-        strace procps sysstat htop lshw dmidecode numactl \
+        bash strace procps sysstat htop lshw dmidecode numactl \
         # K8s/Cloud-native tools
         jq yq openssh-client kubectl helm k9s cosign crane \
         # AMD-only tools 
