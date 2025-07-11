@@ -1,0 +1,38 @@
+name: Scan latest debug-tools image for vulnerabilities
+
+on:
+  schedule:
+    - cron: "0 5 * * *" # Every day at 05:00 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  security-events: write # Required to upload results
+  actions: read
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+
+    env:
+      IMAGE: ghcr.io/${{ github.repository }}:latest
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+        with:
+          fetch-depth: 1
+
+      - name: Install Trivy
+        uses: aquasecurity/trivy-action@dc5a429b52fcf669ce959baa2c2dd26090d2a6c4  # v0.32.0
+        with:
+          image-ref: ${{ env.IMAGE }}
+          format: sarif
+          output: trivy-results.sarif
+          severity: CRITICAL,HIGH
+          ignore-unfixed: true # ignore unfixed issues, can't do anything about them
+
+      - name: Upload Trivy scan results to GitHub
+        uses: github/codeql-action/upload-sarif@9b02dc2f60288b463e7a66e39c78829b62780db7  # v2.22.1
+        with:
+          sarif_file: trivy-results.sarif
