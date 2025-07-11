@@ -68,8 +68,21 @@ jobs:
 
       - name: Cosign Keyless Sign
         run: |
+          set -euo pipefail  
           IMAGE_WITH_DIGEST="${{ env.IMAGE }}@${{ steps.build.outputs.digest }}"
-          cosign sign --yes "$IMAGE_WITH_DIGEST"
+          cosign sign \
+            --yes \
+            "$IMAGE_WITH_DIGEST"
+
+      - name: Cosign Attest SLSA Provenance
+        run: |
+          set -euo pipefail
+          IMAGE_WITH_DIGEST="${{ env.IMAGE }}@${{ steps.build.outputs.digest }}"
+          cosign attest \
+            --yes \
+            --type slsaprovenance \
+            --predicate slsa-provenance.json \
+            "$IMAGE_WITH_DIGEST"
 
       - name: Verify SLSA Provenance
         run: |
@@ -81,8 +94,7 @@ jobs:
             --type slsaprovenance \
             --certificate-identity "$CERT_IDENTITY" \
             --certificate-oidc-issuer "https://token.actions.githubusercontent.com" \
-            "$IMAGE_WITH_DIGEST" \
-            | jq -r '.payload | @base64d | fromjson' > slsa-provenance.json
+            "$IMAGE_WITH_DIGEST"
 
       - name: Upload SBOM & Provenance Artifacts
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4.6.2

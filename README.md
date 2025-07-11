@@ -9,14 +9,17 @@ Small image to debug issues in Kubernetes environment.
 To use this image in your cluster on specific node:
 
 ```shell
-kubectl run -it --rm debug --image=ghcr.io/mchmarny/debug-tools:latest --restart=Never --overrides='
-{
-  "apiVersion": "v1",
-  "spec": {
-    "nodeName": "10.0.130.223"
-  }
-}' -- bash
+kubectl run -it --rm debug \
+  --image=ghcr.io/mchmarny/debug-tools:latest \
+  --restart=Never \
+  --overrides='{ "apiVersion": "v1", "spec": { "nodeName": "10.0.130.223" } }' \
+  -- bash
 ```
+
+## verification
+
+The `debug-tools` images comes with SLSA provenance using cosign attestation
+
 
 ## disclaimer
 
