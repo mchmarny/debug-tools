@@ -19,10 +19,8 @@ jobs:
 
     env:
       IMAGE: ghcr.io/${{ github.repository }}
+      IMAGE_NAME: ${{ github.repository }}
       TAG: ${{ github.sha }}
-      SBOM_FORMAT: cyclonedx-json
-      SBOM_FILE: sbom.json
-      ATTEST_FORMAT: cyclonedx
 
     steps:
       - name: Checkout source
@@ -46,6 +44,14 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.REG_PUSH_TOKEN || secrets.GITHUB_TOKEN }}
 
+      - name: Extract image metadata
+        id: meta
+        uses: docker/metadata-action@902fa8ec7d6ecbf8d84d538b9b233a880e428804  # v5.7.0
+        with:
+          images: ${{ env.IMAGE_NAME }}
+        env:
+          DOCKER_METADATA_ANNOTATIONS_LEVELS: manifest,index
+
       - name: Build & Push Image
         id: build
         uses: docker/build-push-action@263435318d21b8e681c14492fe198d362a7d2c83  # v6.18.0
@@ -54,52 +60,10 @@ jobs:
           file: tools.docker
           platforms: linux/amd64,linux/arm64
           push: true
-          provenance: mode=max
           sbom: true
+          provenance: mode=max
+          annotations: ${{ steps.meta.outputs.annotations }}
+          labels: ${{ steps.meta.outputs.labels }}
           tags: |
             ${{ env.IMAGE }}:latest
             ${{ env.IMAGE }}:${{ env.TAG }}
-
-      - name: Save Image Digest
-        run: echo "${{ steps.build.outputs.digest }}" > .digest
-
-      - name: Install Cosign
-        uses: sigstore/cosign-installer@398d4b0eeef1380460a10c8013a76f728fb906ac  # v3.9.1
-
-      - name: Cosign Keyless Sign
-        run: |
-          set -euo pipefail  
-          IMAGE_WITH_DIGEST="${{ env.IMAGE }}@${{ steps.build.outputs.digest }}"
-          cosign sign \
-            --yes \
-            "$IMAGE_WITH_DIGEST"
-
-      - name: Cosign Attest SLSA Provenance
-        run: |
-          set -euo pipefail
-          IMAGE_WITH_DIGEST="${{ env.IMAGE }}@${{ steps.build.outputs.digest }}"
-          cosign attest \
-            --yes \
-            --type slsaprovenance \
-            --predicate slsa-provenance.json \
-            "$IMAGE_WITH_DIGEST"
-
-      - name: Verify SLSA Provenance
-        run: |
-          set -euo pipefail
-          IMAGE_WITH_DIGEST="${{ env.IMAGE }}@${{ steps.build.outputs.digest }}"
-          CERT_IDENTITY="https://github.com/${GITHUB_REPOSITORY}/github-actions"
-          echo "Verifying $IMAGE_WITH_DIGEST with $CERT_IDENTITY"
-          cosign verify-attestation \
-            --type slsaprovenance \
-            --certificate-identity "$CERT_IDENTITY" \
-            --certificate-oidc-issuer "https://token.actions.githubusercontent.com" \
-            "$IMAGE_WITH_DIGEST"
-
-      - name: Upload SBOM & Provenance Artifacts
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4.6.2
-        with:
-          name: sbom-and-provenance
-          if-no-files-found: error
-          path: |
-            slsa-provenance.json
