@@ -22,9 +22,9 @@ kubectl run -it --rm debug \
 
 This image includes [SBOM](https://www.cisa.gov/sbom) in [SPDX v2.3](https://spdx.github.io/spdx-spec/v2.3/) and [SLSA provenance attestation](https://slsa.dev/spec/v1.0/provenance) embedded in the container itself to enable you to verify that it was:
 
-✅ Built in a trusted GitHub Actions workflow
-✅ Free from tampering after the build
-✅ Pushed to the intended registry by the owner of this repository
+* Built in a trusted GitHub Actions workflow
+* Free from tampering after the build
+* Pushed to the intended registry by the owner of this repository
 
 > Note, requires [crane](https://github.com/google/go-containerregistry/tree/main/cmd/crane) and [jq](https://jqlang.github.io/jq/)
 

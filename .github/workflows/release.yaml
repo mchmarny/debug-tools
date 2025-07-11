@@ -21,7 +21,6 @@ jobs:
       IMAGE: ghcr.io/${{ github.repository }}
       IMAGE_NAME: ${{ github.repository }}
       TAG: ${{ github.sha }}
-      DESCRIPTION: "Small container image with common network, storage, kernel, k8s debug tools."
 
     steps:
       - name: Checkout source
@@ -63,9 +62,7 @@ jobs:
           push: true
           sbom: true
           provenance: mode=max
-          annotations: |
-            org.opencontainers.image.description="${{ env.DESCRIPTION }}"
-            ${{ steps.meta.outputs.annotations }}
+          annotations: ${{ steps.meta.outputs.annotations }}
           labels: ${{ steps.meta.outputs.labels }}
           tags: |
             ${{ env.IMAGE }}:latest
