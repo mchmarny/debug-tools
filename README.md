@@ -6,7 +6,7 @@ Small container image with common network, storage, kernel, k8s debug tools.
 
 ## usage 
 
-To run this image in your cluster on a specific node and tolerations:
+To run this image in your cluster and shell onto a specific node (adjust or replace node name and tolerations as needed):
 
 ```shell
 kubectl run -it --rm debug \
