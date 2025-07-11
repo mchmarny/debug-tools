@@ -155,7 +155,7 @@ The output will have multiple manifests. For each supported architecture there w
   ],
   "annotations": {
     "org.opencontainers.image.created": "2025-07-11T11:54:59.934Z",
-    "org.opencontainers.image.description": "",
+    "org.opencontainers.image.description": "Container image with common network, storage, kernel, and k8s debug tools.",
     "org.opencontainers.image.licenses": "Apache-2.0",
     "org.opencontainers.image.revision": "6d77e40b7160fda17267414e5e48cdbd32de9a0e",
     "org.opencontainers.image.source": "https://github.com/mchmarny/debug-tools",
