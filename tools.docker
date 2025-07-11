@@ -43,5 +43,6 @@ ENV PATH="/usr/local/bin:$PATH" \
     NVIDIA_VISIBLE_DEVICES=all \
     NVIDIA_DRIVER_CAPABILITIES=compute,utility
 
-ENTRYPOINT ["/bin/sh"]
-CMD ["-l"]
+SHELL ["/bin/bash", "-c"]
+ENTRYPOINT []
+CMD ["bash"]

@@ -12,7 +12,13 @@ To run this image in your cluster on a specific node:
 kubectl run -it --rm debug \
   --image=ghcr.io/mchmarny/debug-tools:latest \
   --restart=Never \
-  --overrides='{ "apiVersion": "v1", "spec": { "nodeName": "10.0.130.223" } }' \
+  --overrides='{
+    "apiVersion": "v1",
+    "spec": {
+      "nodeName": "ip-10-0-143-162.ec2.internal",
+      "tolerations": [{ "key": "dedicated", "value": "user-workload" } ]
+    }
+  }' \
   -- bash
 ```
 
