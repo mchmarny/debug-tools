@@ -1,51 +1,46 @@
-FROM cgr.dev/chainguard/go:latest-dev
+FROM --platform=$BUILDPLATFORM cgr.dev/chainguard/apko as builder
+
+# Versions
+ARG GRYPE_VERSION=0.95.0
+ARG GRYPE_SHA256=82f22c660dcc0b49a9b45ec060a8d0f7b7fb75b33aecf6cc08060062bbf012ce
+ARG SYFT_VERSION=1.28.0
+ARG SYFT_SHA256=3edee7fe1ceb1f78360e547f57048930d57f00c7ec3d0b8bdfb902805f048468
 
 LABEL org.opencontainers.image.source="https://github.com/mchmarny/debug-tools" \
-      org.opencontainers.image.description="Set of debug tools" \
+      org.opencontainers.image.description="Set of debug tools for cloud-native GPU workloads" \
       org.opencontainers.image.vendor="mchmarny" \
       org.opencontainers.image.licenses="Apache-2.0" \
-      org.opencontainers.image.title="tools"
-
-# Versions (repo tags)
-ARG GRYPE_VERSION=v0.94.0
-ARG SYFT_VERSION=v1.27.1
+      org.opencontainers.image.title="debug-tools"
 
 WORKDIR /app
 
 RUN apk update && apk upgrade && \
-    \
-    # Install core packages
     apk add --no-cache \
-        bind-tools \
-        cosign \
-        crane \
-        curl \
-        dhcping \
-        ethtool \
-        file \
-        fping \
-        iftop \
-        iperf \
-        iputils \
-        jq \
-        openssh-client \
-        openssl \
-        strace \
-        tcpdump \
-        util-linux && \
-    \
-    # Install Syft, Grype
-    curl -sSfL https://raw.githubusercontent.com/anchore/grype/main/install.sh | VERSION=${GRYPE_VERSION} bash -s -- -b /usr/local/bin && \
-    curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh | VERSION=${SYFT_VERSION} bash -s -- -b /usr/local/bin && \
-    \
-    # Clean up
-    rm -rf /var/cache/apk/* \
-       /tmp/* /var/tmp/* /root/.cache /root/.config
+        # Networking tools
+        bind-tools curl dhcping ethtool fping iftop iperf3 iputils mtr \
+        netcat-openbsd nmap socat tcpdump tshark httpie \
+        # Storage tools
+        file util-linux lsof iotop hdparm smartmontools ncdu tar \
+        # Kernel & system tools
+        strace procps sysstat dstat htop lshw dmidecode numactl \
+        # Kubernetes / Cloud-native tools
+        jq yq openssh-client kubectl helm k9s stern cosign crane \
+        # NVIDIA GPU/AI tools
+        nvidia-container-toolkit nvidia-smi nvtop \
+    && rm -rf /var/cache/apk/* /tmp/*
 
-ENV PATH="/root/go/bin:/usr/local/bin:$PATH"
+# Install Syft and Grype manually
+RUN curl -sSL -o grype.tar.gz https://github.com/anchore/grype/releases/download/v${GRYPE_VERSION}/grype_${GRYPE_VERSION}_linux_amd64.tar.gz && \
+    echo "${GRYPE_SHA256}  grype.tar.gz" | sha256sum -c - && \
+    tar -xzf grype.tar.gz -C /usr/local/bin && rm grype.tar.gz && \
+    curl -sSL -o syft.tar.gz https://github.com/anchore/syft/releases/download/v${SYFT_VERSION}/syft_${SYFT_VERSION}_linux_amd64.tar.gz && \
+    echo "${SYFT_SHA256}  syft.tar.gz" | sha256sum -c - && \
+    tar -xzf syft.tar.gz -C /usr/local/bin && rm syft.tar.gz
 
-SHELL ["/bin/bash", "-c"]
+# Export path and add NVIDIA runtime hooks
+ENV PATH="/usr/local/bin:$PATH" \
+    NVIDIA_VISIBLE_DEVICES=all \
+    NVIDIA_DRIVER_CAPABILITIES=compute,utility
 
-ENTRYPOINT []
-
-CMD ["bash"]
+ENTRYPOINT ["/bin/sh"]
+CMD ["-l"]
